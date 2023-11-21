@@ -4,6 +4,7 @@
     "Punchline": "An automated scribe documenting your adventures in Eorzea",
     "Description": "An automated scribe documenting your adventures in Eorzea. /rpl for configuration.",
     "RepoUrl": "https://github.com/Adalyia/RPLogger",
+    "IconUrl": "https://raw.githubusercontent.com/Adalyia/RPLogger/master/images/icon.png",
     "Tags": [
         "roleplaying",
         "chat",
