@@ -25,30 +25,30 @@ public sealed class RPLogger : IDalamudPlugin
     private const string ConfigWindowCommandName = "/rpl"; // Slash Command for the config window
     private List<string> worldNames; // List of world names, used to format character names in log files
     private Dictionary<XivChatType, Channel> loggedChannels = new Dictionary<XivChatType, Channel>{
-        { XivChatType.Party, new Channel("Party", "({0}) {1}")},
-        { XivChatType.CrossParty, new Channel("Cross Party", "({0}) {1}")},
-        { XivChatType.Say, new Channel("Say", "{0}: {1}")},
-        { XivChatType.TellIncoming, new Channel("Tell", "From {0}: {1}", true)},
-        { XivChatType.TellOutgoing, new Channel("Tell", "To {0}: {1}", true)},
-        { XivChatType.CustomEmote, new Channel("Emote", "{0}{1}")},
-        { XivChatType.StandardEmote, new Channel("Emote", "{0}{1}")},
-        { XivChatType.CrossLinkShell1, new Channel("CWLS1", "{0}: {1}")},
-        { XivChatType.CrossLinkShell2, new Channel("CWLS2", "{0}: {1}")},
-        { XivChatType.CrossLinkShell3, new Channel("CWLS3", "{0}: {1}")},
-        { XivChatType.CrossLinkShell4, new Channel("CWLS4", "{0}: {1}")},
-        { XivChatType.CrossLinkShell5, new Channel("CWLS5", "{0}: {1}")},
-        { XivChatType.CrossLinkShell6, new Channel("CWLS6", "{0}: {1}")},
-        { XivChatType.CrossLinkShell7, new Channel("CWLS7", "{0}: {1}")},
-        { XivChatType.CrossLinkShell8, new Channel("CWLS8", "{0}: {1}")},
-        { XivChatType.Ls1, new Channel("LS1", "{0}: {1}")},
-        { XivChatType.Ls2, new Channel("LS2", "{0}: {1}")},
-        { XivChatType.Ls3, new Channel("LS3", "{0}: {1}")},
-        { XivChatType.Ls4, new Channel("LS4", "{0}: {1}")},
-        { XivChatType.Ls5, new Channel("LS5", "{0}: {1}")},
-        { XivChatType.Ls6, new Channel("LS6", "{0}: {1}")},
-        { XivChatType.Ls7, new Channel("LS7", "{0}: {1}")},
-        { XivChatType.Ls8, new Channel("LS8", "{0}: {1}")},
-        { XivChatType.Alliance, new Channel("Alliance", "{0}: {1}")}
+        { XivChatType.Party, new Channel("Party", "({0}) {1}", "{0}")},
+        { XivChatType.CrossParty, new Channel("Cross Party", "({0}) {1}", "{0}")},
+        { XivChatType.Say, new Channel("Say", "{0}: {1}", "{0} ")},
+        { XivChatType.TellIncoming, new Channel("Tell", "From {0}: {1}", "{0} ", true)},
+        { XivChatType.TellOutgoing, new Channel("Tell", "To {0}: {1}", "{0} ", true)},
+        { XivChatType.CustomEmote, new Channel("Emote", "{0}{1}", "{0} ")},
+        { XivChatType.StandardEmote, new Channel("Emote", "{0}{1}", "{0} ")},
+        { XivChatType.CrossLinkShell1, new Channel("CWLS1", "{0}: {1}", "{0} ")},
+        { XivChatType.CrossLinkShell2, new Channel("CWLS2", "{0}: {1}", "{0} ")},
+        { XivChatType.CrossLinkShell3, new Channel("CWLS3", "{0}: {1}", "{0} ")},
+        { XivChatType.CrossLinkShell4, new Channel("CWLS4", "{0}: {1}", "{0} ")},
+        { XivChatType.CrossLinkShell5, new Channel("CWLS5", "{0}: {1}", "{0} ")},
+        { XivChatType.CrossLinkShell6, new Channel("CWLS6", "{0}: {1}", "{0} ")},
+        { XivChatType.CrossLinkShell7, new Channel("CWLS7", "{0}: {1}", "{0} ")},
+        { XivChatType.CrossLinkShell8, new Channel("CWLS8", "{0}: {1}", "{0} ")},
+        { XivChatType.Ls1, new Channel("LS1", "{0}: {1}", "{0} ")},
+        { XivChatType.Ls2, new Channel("LS2", "{0}: {1}", "{0} ")},
+        { XivChatType.Ls3, new Channel("LS3", "{0}: {1}", "{0} ")},
+        { XivChatType.Ls4, new Channel("LS4", "{0}: {1}", "{0} ")},
+        { XivChatType.Ls5, new Channel("LS5", "{0}: {1}", "{0} ")},
+        { XivChatType.Ls6, new Channel("LS6", "{0}: {1}", "{0} ")},
+        { XivChatType.Ls7, new Channel("LS7", "{0}: {1}", "{0} ")},
+        { XivChatType.Ls8, new Channel("LS8", "{0}: {1}", "{0} ")},
+        { XivChatType.Alliance, new Channel("Alliance", "({0}) {1}", "{0}")}
     };
 
 
@@ -245,7 +245,7 @@ public sealed class RPLogger : IDalamudPlugin
 
         // Time stamp stuff
         DateTimeOffset currentTime = DateTimeOffset.Now;
-        string timePrefix = Config.Datestamp || Config.Timestamp ? GetTimePrefix(currentTime) + " " : "";
+        string timePrefix = Config.Datestamp || Config.Timestamp ? string.Format(this.loggedChannels[type].TimePrefixFormat, GetTimePrefix(currentTime)) : "";
 
         // Check if the subdirectories exist, if not create them.
         if (!Directory.Exists(Path.Combine(Config.LogsDirectory, playerName))) Directory.CreateDirectory(Path.Combine(Config.LogsDirectory, playerName));
