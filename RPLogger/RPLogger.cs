@@ -245,7 +245,7 @@ public sealed class RPLogger : IDalamudPlugin
 
         // Time stamp stuff
         DateTimeOffset currentTime = DateTimeOffset.Now;
-        string timePrefix = Config.Datestamp || Config.Timestamp ? GetTimePrefix(currentTime) : "";
+        string timePrefix = Config.Datestamp || Config.Timestamp ? GetTimePrefix(currentTime) + " " : "";
 
         // Check if the subdirectories exist, if not create them.
         if (!Directory.Exists(Path.Combine(Config.LogsDirectory, playerName))) Directory.CreateDirectory(Path.Combine(Config.LogsDirectory, playerName));
