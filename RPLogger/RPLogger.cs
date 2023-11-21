@@ -1,27 +1,17 @@
 using Dalamud.Game.Command;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.IoC;
 using Dalamud.Plugin;
-using System.IO;
+using Dalamud.Utility;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.FFXIV.Client.UI.Info;
-using RPLogger.Windows;
-using FFXIVClientStructs.FFXIV.Client.Graphics;
-using System.Threading.Tasks;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using System;
-using Dalamud.Utility;
-using System.Collections.Generic;
-using Lumina.Excel.GeneratedSheets;
-using World = Lumina.Excel.GeneratedSheets.World;
+using System.IO;
+using System.Threading.Tasks;
 using System.Linq;
-using Lumina.Excel;
-using System.Text.RegularExpressions;
-using System.Reflection;
+using System.Collections.Generic;
+using World = Lumina.Excel.GeneratedSheets.World;
+using RPLogger.Windows;
 
 namespace RPLogger;
 
@@ -30,11 +20,11 @@ namespace RPLogger;
 /// </summary>
 public sealed class RPLogger : IDalamudPlugin
 {
-    // Plugin Settings
+    // Settings
     public string Name => "RP Logger";
-    private const string CommandName = "/rpl"; 
-    private List<string> WorldNames;
-    private Dictionary<XivChatType, Channel> LoggedChannels = new Dictionary<XivChatType, Channel>{
+    private const string ConfigWindowCommandName = "/rpl"; // Slash Command for the config window
+    private List<string> worldNames; // List of world names, used to format character names in log files
+    private Dictionary<XivChatType, Channel> loggedChannels = new Dictionary<XivChatType, Channel>{
         { XivChatType.Party, new Channel("Party", "({0}) {1}")},
         { XivChatType.CrossParty, new Channel("Cross Party", "({0}) {1}")},
         { XivChatType.Say, new Channel("Say", "{0}: {1}")},
@@ -62,13 +52,15 @@ public sealed class RPLogger : IDalamudPlugin
     };
 
 
-    // Dalamud Services
+    // Dalamud Services/Stuff
     private DalamudPluginInterface PluginInterface { get; init; }
     private ICommandManager CommandManager { get; init; }
     private IClientState ClientState { get; init; }
     private IDataManager DataManager { get; init; }
     private IChatGui ChatGui { get; init; }
-    private IPluginLog Log { get; init; }
+    public IPluginLog Log { get; init; }
+
+    // Plugin UI
     public Configuration Config { get; init; }
     public WindowSystem WindowSystem = new("RPLogger");
     private ConfigWindow ConfigWindow { get; init; }
@@ -82,43 +74,51 @@ public sealed class RPLogger : IDalamudPlugin
     /// <param name="chatGui">Handles all chat messages.</param>
     /// <param name="pluginLog">Logger for the plugin.</param>
     public RPLogger(
-        [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-        [RequiredVersion("1.0")] ICommandManager commandManager,
-        [RequiredVersion("1.0")] IClientState clientState,
-        [RequiredVersion("1.0")] IDataManager dataManager,
-        [RequiredVersion("1.0")] IChatGui chatGui,
-        [RequiredVersion("1.0")] IPluginLog pluginLog)
+        DalamudPluginInterface pluginInterface,
+        ICommandManager commandManager,
+        IClientState clientState,
+        IDataManager dataManager,
+        IChatGui chatGui,
+        IPluginLog pluginLog)
     {
         
         // Services
-        this.PluginInterface = pluginInterface;
-        this.CommandManager = commandManager;
-        this.ChatGui = chatGui;
-        this.Log = pluginLog;
-        this.ClientState = clientState;
-        this.DataManager = dataManager;
+        PluginInterface = pluginInterface;
+        CommandManager = commandManager;
+        ChatGui = chatGui;
+        Log = pluginLog;
+        ClientState = clientState;
+        DataManager = dataManager;
 
-        // UI / Commands
-        this.WorldNames = new List<string>();
-        this.Config = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-        this.Config.Initialize(this.PluginInterface);
+        // Plugin Config Stuff
+        Config = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        Config.Initialize(PluginInterface);
         ConfigWindow = new ConfigWindow(this);
-            
         WindowSystem.AddWindow(ConfigWindow);
 
-        this.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+        // Add slash command handler
+        CommandManager.AddHandler(ConfigWindowCommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "Opens the configuration for RP Logger"
         });
 
-        this.PluginInterface.UiBuilder.Draw += DrawUI;
-        this.PluginInterface.UiBuilder.OpenConfigUi += () =>
+        // Add UI event handlers
+        PluginInterface.UiBuilder.Draw += DrawUI;
+        PluginInterface.UiBuilder.OpenConfigUi += () =>
         {
             ConfigWindow.IsOpen = true;
         };
 
-        this.ChatGui.ChatMessage += OnChatMessage;
-        this.DataManager.GetExcelSheet<World>().Where(x => x.Name != null && x.IsPublic).ToList().ForEach(x => WorldNames.Add(x.Name.ToString()));
+        // Add Chat Message event handler
+        ChatGui.ChatMessage += OnChatMessage;
+
+        // Initialize and populate world names list
+        worldNames = new List<string>();
+        DataManager.GetExcelSheet<World>()?.Where(world => world != null && world.Name != null && world.IsPublic).ToList().ForEach(world =>
+        {
+            if (world.Name != null)
+                worldNames.Add(world.Name.ToString());
+        });
 
     }
 
@@ -127,10 +127,12 @@ public sealed class RPLogger : IDalamudPlugin
     /// </summary>
     public void Dispose()
     {
-        this.WindowSystem.RemoveAllWindows();
+        WindowSystem.RemoveAllWindows();
         ConfigWindow.Dispose();
-        this.CommandManager.RemoveHandler(CommandName);
-        this.ChatGui.ChatMessage -= OnChatMessage;
+        CommandManager.RemoveHandler(ConfigWindowCommandName);
+        ChatGui.ChatMessage -= OnChatMessage;
+        PluginInterface.UiBuilder.Draw -= DrawUI;
+        PluginInterface.UiBuilder.OpenConfigUi -= ShowConfig;
     }
 
     /// <summary>
@@ -154,106 +156,105 @@ public sealed class RPLogger : IDalamudPlugin
     /// <param name="isHandled">Whether the event's been handled or not.</param>
     internal void OnChatMessage(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled)
     {
-        // This.. shouldn't be possible? I'm assuming this event can't even fire unless you're logged in but just in case lol.
-        if (!this.ClientState.IsLoggedIn || this.ClientState.LocalPlayer == null || this.ClientState.LocalPlayer.Name == null || this.ClientState.LocalPlayer.HomeWorld.GameData == null ||this.ClientState.LocalPlayer.HomeWorld.GameData.Name == null) return;
+        // this.. shouldn't be possible? I'm assuming this event can't even fire unless you're logged in but just in case lol.
+        if (!ClientState.IsLoggedIn || ClientState.LocalPlayer == null || ClientState.LocalPlayer.Name == null || ClientState.LocalPlayer.HomeWorld.GameData == null ||ClientState.LocalPlayer.HomeWorld.GameData.Name == null) return;
 
         // Check if it's a supported chat channel
-        if (!this.LoggedChannels.ContainsKey(type)) return;
+        if (!loggedChannels.ContainsKey(type)) return;
 
         // Check if the channel is enabled in the config
         // Return based on channel logging options
         switch (type)
         {
             case XivChatType.Party or XivChatType.CrossParty:
-                if (!this.Config.PartyLogging) return;
+                if (!Config.PartyLogging) return;
                 break;
             case XivChatType.Say:
-                if (!this.Config.SayLogging) return;
+                if (!Config.SayLogging) return;
                 break;
             case XivChatType.TellIncoming or XivChatType.TellOutgoing:
-                if (!this.Config.TellsLogging) return;
+                if (!Config.TellsLogging) return;
                 break;
             case XivChatType.CustomEmote:
-                if (!this.Config.CustomEmoteLogging) return;
+                if (!Config.CustomEmoteLogging) return;
                 break;
             case XivChatType.StandardEmote:
-                if (!this.Config.StandardEmoteLogging) return;
+                if (!Config.StandardEmoteLogging) return;
                 break;
             case XivChatType.CrossLinkShell1:
-                if (!this.Config.CWLS1Logging) return;
+                if (!Config.CWLS1Logging) return;
                 break;
             case XivChatType.CrossLinkShell2:
-                if (!this.Config.CWLS2Logging) return;
+                if (!Config.CWLS2Logging) return;
                 break;
             case XivChatType.CrossLinkShell3:
-                if (!this.Config.CWLS3Logging) return;
+                if (!Config.CWLS3Logging) return;
                 break;
             case XivChatType.CrossLinkShell4:
-                if (!this.Config.CWLS4Logging) return;
+                if (!Config.CWLS4Logging) return;
                 break;
             case XivChatType.CrossLinkShell5:
-                if (!this.Config.CWLS5Logging) return;
+                if (!Config.CWLS5Logging) return;
                 break;
             case XivChatType.CrossLinkShell6:
-                if (!this.Config.CWLS6Logging) return;
+                if (!Config.CWLS6Logging) return;
                 break;
             case XivChatType.CrossLinkShell7:
-                if (!this.Config.CWLS7Logging) return;
+                if (!Config.CWLS7Logging) return;
                 break;
             case XivChatType.CrossLinkShell8:
-                if (!this.Config.CWLS8Logging) return;
+                if (!Config.CWLS8Logging) return;
                 break;
             case XivChatType.Ls1:
-                if (!this.Config.LS1Logging) return;
+                if (!Config.LS1Logging) return;
                 break;
             case XivChatType.Ls2:
-                if (!this.Config.LS2Logging) return;
+                if (!Config.LS2Logging) return;
                 break;
             case XivChatType.Ls3:
-                if (!this.Config.LS3Logging) return;
+                if (!Config.LS3Logging) return;
                 break;
             case XivChatType.Ls4:
-                if (!this.Config.LS4Logging) return;
+                if (!Config.LS4Logging) return;
                 break;
             case XivChatType.Ls5:
-                if (!this.Config.LS5Logging) return;
+                if (!Config.LS5Logging) return;
                 break;
             case XivChatType.Ls6:
-                if (!this.Config.LS6Logging) return;
+                if (!Config.LS6Logging) return;
                 break;
             case XivChatType.Ls7:
-                if (!this.Config.LS7Logging) return;
+                if (!Config.LS7Logging) return;
                 break;
             case XivChatType.Ls8:
-                if (!this.Config.LS8Logging) return;
+                if (!Config.LS8Logging) return;
                 break;
             case XivChatType.Alliance:
-                if (!this.Config.AllianceLogging) return;
+                if (!Config.AllianceLogging) return;
                 break;
         }
 
         // Write the message to the plugin log
-        this.Log.Debug($"[{type}] {sender}: \"{message.TextValue}\"");
+        Log.Debug($"[{type}] {sender}: \"{message.TextValue}\"");
 
-        // Yes, I know the below code is a visual dumpster fire but it works and I'm too lazy to clean it up right now.
-        string playerName = $"{this.ClientState.LocalPlayer.Name}@{this.ClientState.LocalPlayer.HomeWorld.GameData.Name}";
-        string senderWorldName = this.WorldNames.FirstOrDefault(sender.TextValue.Contains);
-        string senderName = senderWorldName.IsNullOrEmpty() ? string.Concat(CorrectCharacterName(sender.TextValue),"@", this.ClientState.LocalPlayer.HomeWorld.GameData.Name) : string.Concat(CorrectCharacterName(sender.TextValue.Replace(senderWorldName, "").Trim()),"@",senderWorldName);
+        // Yes, I know the below code is a visual dumpster fire but it works and a cleanup is Soon™
+        string playerName = $"{ClientState.LocalPlayer.Name}@{ClientState.LocalPlayer.HomeWorld.GameData.Name}";
+        string? senderWorldName = worldNames.FirstOrDefault(sender.TextValue.Contains);
+
+        string senderName = senderWorldName.IsNullOrEmpty() ? string.Concat(CorrectCharacterName(sender.TextValue),"@", ClientState.LocalPlayer.HomeWorld.GameData.Name) : string.Concat(CorrectCharacterName(sender.TextValue.Replace(senderWorldName, "").Trim()),"@",senderWorldName);
 
         // Time stamp stuff
         DateTimeOffset currentTime = DateTimeOffset.Now;
-        string timeStamp = this.Config.Timestamp12Hour ? $"{currentTime:hh:mm:ss tt}" : $"{currentTime:HH:mm:ss}";
-        string dateStamp = this.Config.MonthDayYear ? $"{currentTime:MM/dd/yyyy}" : $"{currentTime:dd.MM.yyyy}";
-        string timePrefix = (this.Config.Timestamp || this.Config.Datestamp) ? $"[{(this.Config.Datestamp ? dateStamp + "" : "")}{((this.Config.Datestamp && this.Config.Timestamp) ? " " : "")}{(this.Config.Timestamp ? timeStamp : "")}] " : "";
+        string timePrefix = Config.Datestamp || Config.Timestamp ? GetTimePrefix(currentTime) : "";
 
         // Check if the subdirectories exist, if not create them.
-        if (!Directory.Exists(Path.Combine(this.Config.LogsDirectory, playerName))) Directory.CreateDirectory(Path.Combine(this.Config.LogsDirectory, playerName));
-        if (this.Config.SeparateTellsBySender && !Directory.Exists(Path.Combine(this.Config.LogsDirectory, playerName, "Tells"))) Directory.CreateDirectory(Path.Combine(this.Config.LogsDirectory, playerName, "Tells"));
+        if (!Directory.Exists(Path.Combine(Config.LogsDirectory, playerName))) Directory.CreateDirectory(Path.Combine(Config.LogsDirectory, playerName));
+        if (Config.SeparateTellsBySender && !Directory.Exists(Path.Combine(Config.LogsDirectory, playerName, "Tells"))) Directory.CreateDirectory(Path.Combine(Config.LogsDirectory, playerName, "Tells"));
 
         // Set the file path and log message
-        string fileName = $"{(this.Config.SeparateTellsBySender && this.LoggedChannels[type].TellsChannel ? senderName : playerName)}{(this.Config.SeparateLogs ? this.Config.SeparateTellsBySender && this.LoggedChannels[type].TellsChannel ? "" : $" {this.LoggedChannels[type].Name}" : "")}.txt";
-        string filePath = (this.Config.SeparateTellsBySender && this.LoggedChannels[type].TellsChannel) ? Path.Combine(this.Config.LogsDirectory, playerName, "Tells", fileName) : Path.Combine(this.Config.LogsDirectory, playerName, fileName);
-        string logMessage = $"{timePrefix}{string.Format(this.LoggedChannels[type].MessageFormat, senderName, message.TextValue)}";
+        string fileName = $"{(Config.SeparateTellsBySender && loggedChannels[type].TellsChannel ? senderName : playerName)}{(Config.SeparateLogs ? Config.SeparateTellsBySender && loggedChannels[type].TellsChannel ? "" : $" {loggedChannels[type].Name}" : "")}.txt";
+        string filePath = (Config.SeparateTellsBySender && loggedChannels[type].TellsChannel) ? Path.Combine(Config.LogsDirectory, playerName, "Tells", fileName) : Path.Combine(Config.LogsDirectory, playerName, fileName);
+        string logMessage = $"{timePrefix}{string.Format(loggedChannels[type].MessageFormat, senderName, message.TextValue)}";
 
         // If we somehow got here without a message to log, return.
         if (logMessage.IsNullOrEmpty() || filePath.IsNullOrEmpty()) return;
@@ -267,9 +268,16 @@ public sealed class RPLogger : IDalamudPlugin
     /// </summary>
     private void DrawUI()
     {
-        this.WindowSystem.Draw();
+        WindowSystem.Draw();
     }
 
+    /// <summary>
+    /// Method <c>ShowConfig</c> opens the config window.
+    /// </summary>
+    private void ShowConfig()
+    {
+        ConfigWindow.IsOpen = true;
+    }
     
     /// <summary>
     /// Method <c>FileWriteAsync</c> writes a string to a file asynchronously.
@@ -294,6 +302,19 @@ public sealed class RPLogger : IDalamudPlugin
     public string CorrectCharacterName(string name)
     {
         return new string(Array.FindAll<char>(name.ToCharArray(), (c => (char.IsLetterOrDigit(c) || char.IsWhiteSpace(c) || c == '-'))));
-    }   
+    }
+
+    /// <summary>
+    /// Method <c>GetTimePrefix</c> returns a string containing the current time and date in the format specified in the config.
+    /// </summary>
+    /// <param name="time">A DateTimeoffset</param>
+    /// <returns>A string containing the current time and date in the format specified in the config</returns>
+    public string GetTimePrefix(DateTimeOffset time)
+    {
+        string timeStamp = Config.Timestamp12Hour ? $"{time:hh:mm:ss tt}" : $"{time:HH:mm:ss}";
+        string dateStamp = Config.MonthDayYear ? $"{time:MM/dd/yyyy}" : $"{time:dd.MM.yyyy}";
+
+        return $"[{(Config.Datestamp ? dateStamp + "" : "")}{((Config.Datestamp && Config.Timestamp) ? " " : "")}{(Config.Timestamp ? timeStamp : "")}]";
+    }
 }
 

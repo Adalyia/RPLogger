@@ -2,7 +2,6 @@ using Dalamud.Configuration;
 using Dalamud.Plugin;
 using Dalamud.Utility;
 using System;
-using System.IO;
 
 namespace RPLogger;
 
@@ -16,7 +15,7 @@ public class Configuration : IPluginConfiguration
     // Config version 
     public int Version { get; set; } = 0;
 
-    // Options
+    // Logging Options
     public bool PartyLogging { get; set; } = true;
     public bool CustomEmoteLogging { get; set; } = true;
     public bool StandardEmoteLogging { get; set; } = false;
@@ -40,33 +39,38 @@ public class Configuration : IPluginConfiguration
     public bool LS8Logging { get; set; } = false;
     public bool AllianceLogging { get; set; } = false;
 
+    // Timestamp Options
     public bool Timestamp { get; set; } = true;
     public bool Timestamp12Hour { get; set; } = false;
     public bool Datestamp { get; set; } = true;
     public bool MonthDayYear { get; set; } = false;
 
+    // Log Structure Options
     public bool SeparateLogs { get; set; } = true;
     public bool SeparateTellsBySender { get; set; } = true;
+
+    // Log Directory
     public string LogsDirectory { get; set; } = "";
 
 
     // the below exist just to make saving less cumbersome
     [NonSerialized]
-    private DalamudPluginInterface? PluginInterface;
+    private DalamudPluginInterface? pluginInterface;
 
     public void Initialize(DalamudPluginInterface pluginInterface)
     {
-        this.PluginInterface = pluginInterface;
-        if (this.LogsDirectory.IsNullOrEmpty())
+        this.pluginInterface = pluginInterface;
+        if (LogsDirectory.IsNullOrEmpty())
         {
-            this.LogsDirectory = this.PluginInterface!.GetPluginConfigDirectory();
+            // By default we'll use the plugin config directory
+            LogsDirectory = this.pluginInterface!.GetPluginConfigDirectory();
         }
 
     }
 
     public void Save()
     {
-        this.PluginInterface!.SavePluginConfig(this);
+        pluginInterface!.SavePluginConfig(this);
     }
 }
 

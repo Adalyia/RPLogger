@@ -3,9 +3,9 @@
   <Import Project="Dalamud.Plugin.Bootstrap.targets" />
 
   <PropertyGroup>
-    <Authors>Ada Lyia</Authors>
+    <Authors>Adalyia</Authors>
     <Company></Company>
-    <Version>1.1.0.0</Version>
+    <Version>1.2.0.0</Version>
     <Description>RP Scene Logger</Description>
     <Copyright></Copyright>
     <PackageProjectUrl>https://github.com/Adalyia/RPLogger</PackageProjectUrl>

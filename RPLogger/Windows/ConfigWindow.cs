@@ -4,28 +4,39 @@ using System.Diagnostics;
 using System.Numerics;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
+using System.IO.Compression;
+using System.Linq;
+using Dalamud.Configuration;
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
+using System.Text;
+using System.Collections.Generic;
 
 namespace RPLogger.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
-    private Configuration Configuration;
-    private RPLogger Plugin;
+    // Config var
+    private Configuration config;
+    private RPLogger plugin;
 
+
+    // Constructor
     public ConfigWindow(RPLogger plugin) : base(
         string.Concat(plugin.Name, " Config"), // window title
         ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
         ImGuiWindowFlags.NoScrollWithMouse)
     {
-        this.Size = new Vector2(500, 650);
-        this.SizeCondition = ImGuiCond.Always;
+        Size = new Vector2(500, 650);
+        SizeCondition = ImGuiCond.Always;
 
-        this.Configuration = plugin.Config;
-        this.Plugin = plugin;
+        config = plugin.Config;
+        this.plugin = plugin;
     }
 
+    // Clean..up?
     public void Dispose() { }
 
+    // Draw the window
     public override void Draw()
     {
         #region Emote Logging Options
@@ -36,21 +47,21 @@ public class ConfigWindow : Window, IDisposable
         ImGui.TableNextColumn();
 
         // Col 1
-        var customEmoteLogging = this.Configuration.CustomEmoteLogging;
+        var customEmoteLogging = config.CustomEmoteLogging;
         if (ImGui.Checkbox("Log Custom Emotes", ref customEmoteLogging))
         {
-            this.Configuration.CustomEmoteLogging = customEmoteLogging;
-            this.Configuration.Save();
+            config.CustomEmoteLogging = customEmoteLogging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 2
-        var standardEmoteLogging = this.Configuration.StandardEmoteLogging;
+        var standardEmoteLogging = config.StandardEmoteLogging;
         if (ImGui.Checkbox("Log Standard Emotes", ref standardEmoteLogging))
         {
-            this.Configuration.StandardEmoteLogging = standardEmoteLogging;
-            this.Configuration.Save();
+            config.StandardEmoteLogging = standardEmoteLogging;
+            config.Save();
         }
 
         ImGui.EndTable();
@@ -66,42 +77,42 @@ public class ConfigWindow : Window, IDisposable
         ImGui.TableNextColumn();
 
         // Col 1
-        var partyLogging = this.Configuration.PartyLogging;
+        var partyLogging = config.PartyLogging;
         if (ImGui.Checkbox("Log Party Chat", ref partyLogging))
         {
-            this.Configuration.PartyLogging = partyLogging;
-            this.Configuration.Save();
+            config.PartyLogging = partyLogging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 2
-        var tellsLogging = this.Configuration.TellsLogging;
+        var tellsLogging = config.TellsLogging;
         if (ImGui.Checkbox("Log Tells", ref tellsLogging))
         {
-            this.Configuration.TellsLogging = tellsLogging;
-            this.Configuration.Save();
+            config.TellsLogging = tellsLogging;
+            config.Save();
         }
 
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
 
         // Col 1 Row 2
-        var sayLogging = this.Configuration.SayLogging;
+        var sayLogging = config.SayLogging;
         if (ImGui.Checkbox("Log Say Chat", ref sayLogging))
         {
-            this.Configuration.SayLogging = sayLogging;
-            this.Configuration.Save();
+            config.SayLogging = sayLogging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 2 Row 2
-        var allianceLogging = this.Configuration.AllianceLogging;
+        var allianceLogging = config.AllianceLogging;
         if (ImGui.Checkbox("Log Alliance Chat", ref allianceLogging))
         {
-            this.Configuration.AllianceLogging = allianceLogging;
-            this.Configuration.Save();
+            config.AllianceLogging = allianceLogging;
+            config.Save();
         }
 
         ImGui.EndTable();
@@ -115,82 +126,82 @@ public class ConfigWindow : Window, IDisposable
         ImGui.TableNextColumn();
 
         // Col 1
-        var cwls1Logging = this.Configuration.CWLS1Logging;
+        var cwls1Logging = config.CWLS1Logging;
         if (ImGui.Checkbox("Log CWLS 1", ref cwls1Logging))
         {
-            this.Configuration.CWLS1Logging = cwls1Logging;
-            this.Configuration.Save();
+            config.CWLS1Logging = cwls1Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 2
-        var cwls2Logging = this.Configuration.CWLS2Logging;
+        var cwls2Logging = config.CWLS2Logging;
         if (ImGui.Checkbox("Log CWLS 2", ref cwls2Logging))
         {
-            this.Configuration.CWLS2Logging = cwls2Logging;
-            this.Configuration.Save();
+            config.CWLS2Logging = cwls2Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 3
-        var cwls3Logging = this.Configuration.CWLS3Logging;
+        var cwls3Logging = config.CWLS3Logging;
         if (ImGui.Checkbox("Log CWLS 3", ref cwls3Logging))
         {
-            this.Configuration.CWLS3Logging = cwls3Logging;
-            this.Configuration.Save();
+            config.CWLS3Logging = cwls3Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 4
-        var cwls4Logging = this.Configuration.CWLS4Logging;
+        var cwls4Logging = config.CWLS4Logging;
         if (ImGui.Checkbox("Log CWLS 4", ref cwls4Logging))
         {
-            this.Configuration.CWLS4Logging = cwls4Logging;
-            this.Configuration.Save();
+            config.CWLS4Logging = cwls4Logging;
+            config.Save();
         }
 
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
 
         // Col 1 Row 2
-        var cwls5Logging = this.Configuration.CWLS5Logging;
+        var cwls5Logging = config.CWLS5Logging;
         if (ImGui.Checkbox("Log CWLS 5", ref cwls5Logging))
         {
-            this.Configuration.CWLS5Logging = cwls5Logging;
-            this.Configuration.Save();
+            config.CWLS5Logging = cwls5Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 2 Row 2
-        var cwls6Logging = this.Configuration.CWLS6Logging;
+        var cwls6Logging = config.CWLS6Logging;
         if (ImGui.Checkbox("Log CWLS 6", ref cwls6Logging))
         {
-            this.Configuration.CWLS6Logging = cwls6Logging;
-            this.Configuration.Save();
+            config.CWLS6Logging = cwls6Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 3 Row 2
-        var cwls7Logging = this.Configuration.CWLS7Logging;
+        var cwls7Logging = config.CWLS7Logging;
         if (ImGui.Checkbox("Log CWLS 7", ref cwls7Logging))
         {
-            this.Configuration.CWLS7Logging = cwls7Logging;
-            this.Configuration.Save();
+            config.CWLS7Logging = cwls7Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 4 Row 2
-        var cwls8Logging = this.Configuration.CWLS8Logging;
+        var cwls8Logging = config.CWLS8Logging;
         if (ImGui.Checkbox("Log CWLS 8", ref cwls8Logging))
         {
-            this.Configuration.CWLS8Logging = cwls8Logging;
-            this.Configuration.Save();
+            config.CWLS8Logging = cwls8Logging;
+            config.Save();
         }
 
         ImGui.EndTable();
@@ -204,82 +215,82 @@ public class ConfigWindow : Window, IDisposable
         ImGui.TableNextColumn();
 
         // Col 1
-        var ls1Logging = this.Configuration.LS1Logging;
+        var ls1Logging = config.LS1Logging;
         if (ImGui.Checkbox("Log LS 1", ref ls1Logging))
         {
-            this.Configuration.LS1Logging = ls1Logging;
-            this.Configuration.Save();
+            config.LS1Logging = ls1Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 2
-        var ls2Logging = this.Configuration.LS2Logging;
+        var ls2Logging = config.LS2Logging;
         if (ImGui.Checkbox("Log LS 2", ref ls2Logging))
         {
-            this.Configuration.LS2Logging = ls2Logging;
-            this.Configuration.Save();
+            config.LS2Logging = ls2Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 3
-        var ls3Logging = this.Configuration.LS3Logging;
+        var ls3Logging = config.LS3Logging;
         if (ImGui.Checkbox("Log LS 3", ref ls3Logging))
         {
-            this.Configuration.LS3Logging = ls3Logging;
-            this.Configuration.Save();
+            config.LS3Logging = ls3Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 4
-        var ls4Logging = this.Configuration.LS4Logging;
+        var ls4Logging = config.LS4Logging;
         if (ImGui.Checkbox("Log LS 4", ref ls4Logging))
         {
-            this.Configuration.LS4Logging = ls4Logging;
-            this.Configuration.Save();
+            config.LS4Logging = ls4Logging;
+            config.Save();
         }
 
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
 
         // Col 1 Row 2
-        var ls5Logging = this.Configuration.LS5Logging;
+        var ls5Logging = config.LS5Logging;
         if (ImGui.Checkbox("Log LS 5", ref ls5Logging))
         {
-            this.Configuration.LS5Logging = ls5Logging;
-            this.Configuration.Save();
+            config.LS5Logging = ls5Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 2 Row 2
-        var ls6Logging = this.Configuration.LS6Logging;
+        var ls6Logging = config.LS6Logging;
         if (ImGui.Checkbox("Log LS 6", ref ls6Logging))
         {
-            this.Configuration.LS6Logging = ls6Logging;
-            this.Configuration.Save();
+            config.LS6Logging = ls6Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 3 Row 2
-        var ls7Logging = this.Configuration.LS7Logging;
+        var ls7Logging = config.LS7Logging;
         if (ImGui.Checkbox("Log LS 7", ref ls7Logging))
         {
-            this.Configuration.LS7Logging = ls7Logging;
-            this.Configuration.Save();
+            config.LS7Logging = ls7Logging;
+            config.Save();
         }
 
         ImGui.TableNextColumn();
 
         // Col 4 Row 2
-        var ls8Logging = this.Configuration.LS8Logging;
+        var ls8Logging = config.LS8Logging;
         if (ImGui.Checkbox("Log LS 8", ref ls8Logging))
         {
-            this.Configuration.LS8Logging = ls8Logging;
-            this.Configuration.Save();
+            config.LS8Logging = ls8Logging;
+            config.Save();
         }
 
         ImGui.EndTable();
@@ -290,32 +301,32 @@ public class ConfigWindow : Window, IDisposable
         #region Time options
         ImGui.Text("Time Prefix Options"); // Header
 
-        var timestamp = this.Configuration.Timestamp;
+        var timestamp = config.Timestamp;
         if (ImGui.Checkbox("Timestamp Log Messages", ref timestamp))
         {
-            this.Configuration.Timestamp = timestamp;
-            this.Configuration.Save();
+            config.Timestamp = timestamp;
+            config.Save();
         }
 
-        var timestamp12Hour = this.Configuration.Timestamp12Hour;
+        var timestamp12Hour = config.Timestamp12Hour;
         if (ImGui.Checkbox("12-Hour Timestamps (Default is 24)", ref timestamp12Hour))
         {
-            this.Configuration.Timestamp12Hour = timestamp12Hour;
-            this.Configuration.Save();
+            config.Timestamp12Hour = timestamp12Hour;
+            config.Save();
         }
 
-        var datestamp = this.Configuration.Datestamp;
+        var datestamp = config.Datestamp;
         if (ImGui.Checkbox("Datestamp Log Messages", ref datestamp))
         {
-            this.Configuration.Datestamp = datestamp;
-            this.Configuration.Save();
+            config.Datestamp = datestamp;
+            config.Save();
         }
 
-        var monthDayYear = this.Configuration.MonthDayYear;
+        var monthDayYear = config.MonthDayYear;
         if (ImGui.Checkbox("Month/Day/Year (Default is Day.Month.Year)", ref monthDayYear))
         {
-            this.Configuration.MonthDayYear = monthDayYear;
-            this.Configuration.Save();
+            config.MonthDayYear = monthDayYear;
+            config.Save();
         }
         #endregion
 
@@ -324,18 +335,18 @@ public class ConfigWindow : Window, IDisposable
         #region Tells Options
         ImGui.Text("File Structure Options"); // Header
 
-        var separateLogs = this.Configuration.SeparateLogs;
+        var separateLogs = config.SeparateLogs;
         if (ImGui.Checkbox("Split channels into separate log files", ref separateLogs))
         {
-            this.Configuration.SeparateLogs = separateLogs;
-            this.Configuration.Save();
+            config.SeparateLogs = separateLogs;
+            config.Save();
         }
 
-        var separateTellsBySender = this.Configuration.SeparateTellsBySender;
+        var separateTellsBySender = config.SeparateTellsBySender;
         if (ImGui.Checkbox("Split tells log by sender", ref separateTellsBySender))
         {
-            this.Configuration.SeparateTellsBySender = separateLogs;
-            this.Configuration.Save();
+            config.SeparateTellsBySender = separateLogs;
+            config.Save();
         }
         #endregion
 
@@ -344,13 +355,13 @@ public class ConfigWindow : Window, IDisposable
         #region File Options
         ImGui.Text("File Options"); // Header
 
-        var logsDir = this.Configuration.LogsDirectory;
+        var logsDir = config.LogsDirectory;
         if (ImGui.InputText("Logs Directory", ref logsDir, 4096))
         {
             if (Directory.Exists(logsDir))
             {
-                this.Configuration.LogsDirectory = logsDir;
-                this.Configuration.Save();
+                config.LogsDirectory = logsDir;
+                config.Save();
             }
             
         }
@@ -364,7 +375,7 @@ public class ConfigWindow : Window, IDisposable
         #region Button Row
         if (ImGui.Button("Open Logs Folder"))
         {
-            Process.Start("explorer.exe", $@"{this.Configuration.LogsDirectory}");
+            Process.Start("explorer.exe", $@"{config.LogsDirectory}");
         }
 
         ImGui.SameLine();
@@ -375,10 +386,7 @@ public class ConfigWindow : Window, IDisposable
                 
                 if (ImGui.Button("Delete Logs"))
                 {
-                    foreach (var file in Directory.GetFiles(this.Configuration.LogsDirectory))
-                    {
-                        File.Delete(file);
-                    }
+                    DeleteFiles(config.LogsDirectory);
                 }
                 
                 break;
@@ -397,13 +405,80 @@ public class ConfigWindow : Window, IDisposable
                 break;  
         }
 
+        ImGui.SameLine();
+
+        switch (ImGui.GetIO().KeyShift)
+        {
+            case true:
+
+                if (ImGui.Button("Backup & Split Logs"))
+                {
+                    // Add all files and directories to a .zip archive
+                    string zipPath = Path.Combine(config.LogsDirectory, plugin.GetTimePrefix(DateTimeOffset.Now).Replace("/","-").Replace(".","-").Replace(":", "-") + " RPLogger_Backup.zip");
+                    string[] excludedExtensions = { ".zip" };
+
+                    using (ZipArchive zipArchive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+                    {
+                        foreach (string filePath in Directory.EnumerateFiles(config.LogsDirectory, "*", SearchOption.AllDirectories)
+                            .Where(file => !excludedExtensions.Any(ext => file.EndsWith(ext, StringComparison.OrdinalIgnoreCase))))
+                        {
+                            string entryName = Path.GetRelativePath(config.LogsDirectory, filePath);
+
+                            // Replace backslashes with forward slashes for compatibility
+                            entryName = entryName.Replace("\\", "/");
+
+                            zipArchive.CreateEntryFromFile(filePath, entryName);
+                        }
+                    }
+
+                    DeleteFiles(config.LogsDirectory);
+
+                }
+
+                break;
+            case false:
+                ImGui.BeginDisabled();
+
+                ImGui.Button("Backup & Split Logs");
+
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                {
+                    ImGui.SetTooltip("Hold Shift to Backup/Archive and Clean any existing log files.");
+                }
+
+                ImGui.EndDisabled();
+
+                break;
+        }
+
 
         ImGui.SameLine();
 
         if (ImGui.Button("Close"))
         {
-            this.IsOpen = false;
+            IsOpen = false;
         }
         #endregion 
     }
+
+    public void DeleteFiles(string directoryPath, string[]? excludedExtensions = null)
+    {
+        if (excludedExtensions == null)
+        {
+            excludedExtensions = new string[] { ".zip" };
+        }
+
+        DirectoryInfo directory = new DirectoryInfo(directoryPath);
+        foreach (FileInfo file in directory.GetFiles())
+        {
+            if (excludedExtensions.Contains(file.Extension)) continue;
+            file.Delete();
+        }
+        foreach (DirectoryInfo subDirectory in directory.GetDirectories())
+        {
+            DeleteFiles(subDirectory.FullName, excludedExtensions);
+            subDirectory.Delete();
+        }
+    }
+
 }
