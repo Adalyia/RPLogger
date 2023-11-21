@@ -42,7 +42,7 @@ public class ConfigWindow : Window, IDisposable
         #region Emote Logging Options
         
         // Create grid for our channel logging options
-        ImGui.Text("Channel Logging Options"); // Header
+        ImGui.Text("Emote Logging Options"); // Header
         ImGui.BeginTable("EmoteOptionTable", 2, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.NoPadOuterX); // 2 Columns
         ImGui.TableNextColumn();
 
@@ -72,7 +72,7 @@ public class ConfigWindow : Window, IDisposable
 
         #region General Channel Logging Options
 
-        ImGui.Text("General Channel Logging Options"); // Header
+        ImGui.Text("General Logging Options"); // Header
         ImGui.BeginTable("GeneralChannelsOptionTable", 2, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.NoPadOuterX); // 2 Columns
         ImGui.TableNextColumn();
 
