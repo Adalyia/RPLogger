@@ -86,6 +86,11 @@ public sealed class RPLogger : IDalamudPlugin
         });
 
         this.PluginInterface.UiBuilder.Draw += DrawUI;
+        this.PluginInterface.UiBuilder.OpenConfigUi += () =>
+        {
+            ConfigWindow.IsOpen = true;
+        };
+
         this.ChatGui.ChatMessage += OnChatMessage;
         this.DataManager.GetExcelSheet<World>().Where(x => x.Name != null && x.IsPublic).ToList().ForEach(x => WorldNames.Add(x.Name.ToString()));
 
