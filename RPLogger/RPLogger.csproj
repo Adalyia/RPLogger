@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Authors>Ada Lyia</Authors>
     <Company></Company>
-    <Version>1.0.0.1</Version>
+    <Version>1.1.0.0</Version>
     <Description>RP Scene Logger</Description>
     <Copyright></Copyright>
     <PackageProjectUrl>https://github.com/Adalyia/RPLogger</PackageProjectUrl>

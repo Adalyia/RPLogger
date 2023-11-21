@@ -1,14 +1,14 @@
 {
-  "Author": "Ada Lyia",
-  "Name": "RP Logger",
-  "Punchline": "Automatically records your adventures in Eorzea.",
-  "Description": "A simple plugin for writing certain chat channels into text file(s). /rpl for options.",
-  "InternalName": "RPLogger",
-  "ApplicableVersion": "any",
-  "Tags": [
-    "roleplaying",
-    "chat",
-    "rp",
-    "logging"
-  ]
+    "Author": "Ada Lyia",
+    "Name": "RP Logger",
+    "Punchline": "An automated scribe documenting your adventures in Eorzea",
+    "Description": "A simple plugin for writing certain chat channels into text file(s). /rpl for options.",
+    "InternalName": "RPLogger",
+    "ApplicableVersion": "any",
+    "Tags": [
+        "roleplaying",
+        "chat",
+        "rp",
+        "logging"
+    ]
 }
