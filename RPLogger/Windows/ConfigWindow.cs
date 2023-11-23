@@ -6,35 +6,29 @@ using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using System.IO.Compression;
 using System.Linq;
-using Dalamud.Configuration;
-using FFXIVClientStructs.FFXIV.Client.Game.Event;
-using System.Text;
-using System.Collections.Generic;
 
 namespace RPLogger.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
     // Config var
-    private Configuration config;
-    private RPLogger plugin;
-
+    private readonly Configuration config;
+    private readonly RPLogger plugin;
 
     // Constructor
-    public ConfigWindow(RPLogger plugin) : base(
-        string.Concat(plugin.Name, " Config"), // window title
-        ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
-        ImGuiWindowFlags.NoScrollWithMouse)
+    public ConfigWindow(RPLogger plugin) : base(string.Concat(RPLogger.Name, " Config"),  ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         Size = new Vector2(500, 650);
         SizeCondition = ImGuiCond.Always;
-
         config = plugin.Config;
         this.plugin = plugin;
     }
 
     // Clean..up?
-    public void Dispose() { }
+    public void Dispose()
+    { 
+        GC.SuppressFinalize(this);
+    }
 
     // Draw the window
     public override void Draw()
@@ -413,16 +407,17 @@ public class ConfigWindow : Window, IDisposable
 
                 if (ImGui.Button("Backup & Split Logs"))
                 {
-                    // Add all files and directories to a .zip archive
-                    string zipPath = Path.Combine(config.LogsDirectory, plugin.GetTimePrefix(DateTimeOffset.Now).Replace("/","-").Replace(".","-").Replace(":", "-") + " RPLogger_Backup.zip");
-                    string[] excludedExtensions = { ".zip" };
+                    // Path should be the logs directory + a timestamp + RPLogger_Backup.zip
+                    var zipPath = Path.Combine(config.LogsDirectory, plugin.GetTimePrefix(DateTimeOffset.Now).Replace("/","-").Replace(".","-").Replace(":", "-") + " RPLogger_Backup.zip");
+                    string[] excludedExtensions = [".zip"];
 
-                    using (ZipArchive zipArchive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+                    // Add all files and directories to a .zip archive excluding any existing .zip files
+                    using (var zipArchive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
                     {
-                        foreach (string filePath in Directory.EnumerateFiles(config.LogsDirectory, "*", SearchOption.AllDirectories)
+                        foreach (var filePath in Directory.EnumerateFiles(config.LogsDirectory, "*", SearchOption.AllDirectories)
                             .Where(file => !excludedExtensions.Any(ext => file.EndsWith(ext, StringComparison.OrdinalIgnoreCase))))
                         {
-                            string entryName = Path.GetRelativePath(config.LogsDirectory, filePath);
+                            var entryName = Path.GetRelativePath(config.LogsDirectory, filePath);
 
                             // Replace backslashes with forward slashes for compatibility
                             entryName = entryName.Replace("\\", "/");
@@ -463,18 +458,15 @@ public class ConfigWindow : Window, IDisposable
 
     public void DeleteFiles(string directoryPath, string[]? excludedExtensions = null)
     {
-        if (excludedExtensions == null)
-        {
-            excludedExtensions = new string[] { ".zip" };
-        }
+        excludedExtensions ??= [".zip"];
 
-        DirectoryInfo directory = new DirectoryInfo(directoryPath);
-        foreach (FileInfo file in directory.GetFiles())
+        var directory = new DirectoryInfo(directoryPath);
+        foreach (var file in directory.GetFiles())
         {
             if (excludedExtensions.Contains(file.Extension)) continue;
             file.Delete();
         }
-        foreach (DirectoryInfo subDirectory in directory.GetDirectories())
+        foreach (var subDirectory in directory.GetDirectories())
         {
             DeleteFiles(subDirectory.FullName, excludedExtensions);
             subDirectory.Delete();

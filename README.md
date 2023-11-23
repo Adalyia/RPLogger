@@ -2,4 +2,6 @@
 
 # RP Logger
 
-RP Logger is an easy to use plugin for saving the text of various chat channels to file(s).
+Your customizable plugin for logging chat messages.
+
+    https://raw.githubusercontent.com/Adalyia/DalamudPlugins/main/repo.json
