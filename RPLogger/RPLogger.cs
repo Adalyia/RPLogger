@@ -167,20 +167,32 @@ public sealed class RPLogger : IDalamudPlugin
         // Write the message to the plugin Log
         Log.Debug($"[{type}] {sender}: \"{message.TextValue}\"");
 
+        // Local var to store the time the message was received
+        var currentTime = DateTimeOffset.Now;
+
         // If the message is a tell, set the LastTell variable
-        if (type == XivChatType.ErrorMessage && FilterTellErrors(message))
+        if (type == XivChatType.ErrorMessage)
         {
+            if (!FilterTellErrors(message)) return;
             if (LastTell != null)
             {
                 sender = LastTell.Sender;
-                LastTell = null;
+
+                // For error messages we use the timestamp of the corresponding tell
+                currentTime = LastTell.Timestamp; 
+
+                //LastTell = null;
             }
             else
             {
                 Log.Error($"Somehow got an error message without a LastTell set: (type={channelInfo.Name}, senderId={senderId}, sender={sender.TextValue}, message=\"{message.TextValue}\")");
                 return;
             }
+
         }
+
+        // Setup time prefix if the user has it enabled
+        var timePrefix = (Config.Datestamp || Config.Timestamp) ? channelInfo.TimePrefixFormat.Replace("{time}", GetTimePrefix(currentTime)) : "";
 
         // Fix character names for log names & entries
         var playerName = ClientState.LocalPlayer.Name;
@@ -191,14 +203,12 @@ public sealed class RPLogger : IDalamudPlugin
         var senderName = CorrectCharacterName(sender.TextValue.Replace(senderWorldName, "").Trim());
         var senderFullName = $"{senderName}@{senderWorldName}";
 
+
         if (channelInfo.TellsChannel && type != XivChatType.ErrorMessage)
         {
             // If the message is a tell, set the LastTell variable
-            LastTell = new ChatMessage(senderFullName, senderId, sender, message);
+            LastTell = new ChatMessage(senderFullName, senderId, sender, message, currentTime);
         }
-
-        // Setup time prefix if the user has it enabled
-        var timePrefix = (Config.Datestamp || Config.Timestamp) ? channelInfo.TimePrefixFormat.Replace("{time}", GetTimePrefix(DateTimeOffset.Now)) : "";
 
         // Check if the subdirectories exist, if not create them.
         try
