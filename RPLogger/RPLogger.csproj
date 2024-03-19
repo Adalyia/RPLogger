@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Authors>Adalyia</Authors>
     <Company></Company>
-    <Version>1.2.0.7</Version>
+    <Version>1.2.0.8</Version>
     <Description>RP Scene Logger</Description>
     <Copyright></Copyright>
     <PackageProjectUrl>https://github.com/Adalyia/RPLogger</PackageProjectUrl>
@@ -15,6 +15,7 @@
     <PackageOutputPath>$(OutputPath)</PackageOutputPath>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
