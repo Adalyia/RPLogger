@@ -63,7 +63,7 @@ public sealed class RPLogger : IDalamudPlugin
 
 
     // Dalamud Services/Stuff
-    private DalamudPluginInterface PluginInterface { get; init; }
+    private IDalamudPluginInterface PluginInterface { get; init; }
     private ICommandManager CommandManager { get; init; }
     private IClientState ClientState { get; init; }
     private IChatGui ChatGui { get; init; }
@@ -85,7 +85,7 @@ public sealed class RPLogger : IDalamudPlugin
     /// <param name="ClientState">Contains game state information.</param>
     /// <param name="ChatGui">Handles all chat messages.</param>
     /// <param name="Log">Logger for the plugin.</param>
-    public RPLogger(DalamudPluginInterface PluginInterface, ICommandManager CommandManager, IClientState ClientState, IChatGui ChatGui, IPluginLog Log)
+    public RPLogger(IDalamudPluginInterface PluginInterface, ICommandManager CommandManager, IClientState ClientState, IChatGui ChatGui, IPluginLog Log)
     {
         // Services
         this.PluginInterface = PluginInterface;
@@ -152,11 +152,11 @@ public sealed class RPLogger : IDalamudPlugin
     /// Method <c>OnChatMessage</c> is called when a chat message event is fired.
     /// </summary>
     /// <param name="type">The type/channel of the message.</param>
-    /// <param name="senderId">The ID of the sender.</param>
+    /// <param name="timestamp">The chat messages' timestamp</param>
     /// <param name="sender">The sender.</param>
     /// <param name="message">The message.</param>
     /// <param name="isHandled">Whether the event's been handled or not.</param>
-    private void OnChatMessage(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled)
+    private void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled)
     {
         // this.. shouldn't be possible? I'm assuming this event can't even fire unless you're logged in but just in case lol.
         if (ClientState.LocalPlayer == null || ClientState.LocalPlayer.Name == null || ClientState.LocalPlayer.HomeWorld.GameData == null || ClientState.LocalPlayer.HomeWorld.GameData.Name == null) return;
@@ -185,7 +185,7 @@ public sealed class RPLogger : IDalamudPlugin
             }
             else
             {
-                Log.Error($"Somehow got an error message without a LastTell set: (type={channelInfo.Name}, senderId={senderId}, sender={sender.TextValue}, message=\"{message.TextValue}\")");
+                Log.Error($"Somehow got an error message without a LastTell set: (type={channelInfo.Name}, senderId={sender}, sender={sender.TextValue}, message=\"{message.TextValue}\")");
                 return;
             }
 
@@ -207,7 +207,7 @@ public sealed class RPLogger : IDalamudPlugin
         if (channelInfo.TellsChannel && type != XivChatType.ErrorMessage)
         {
             // If the message is a tell, set the LastTell variable
-            LastTell = new ChatMessage(senderFullName, senderId, sender, message, currentTime);
+            LastTell = new ChatMessage(senderFullName, sender, message, currentTime);
         }
 
         // Check if the subdirectories exist, if not create them.
@@ -239,7 +239,7 @@ public sealed class RPLogger : IDalamudPlugin
         // If we somehow got here without a message to Log, throw a tantrum (/s) and return.
         if (logMessage.IsNullOrEmpty() || filePath.IsNullOrEmpty())
         {
-            Log.Error($"Something went wrong while trying to Log a message: (type={channelInfo.Name}, senderId={senderId}, sender={sender.TextValue}, message=\"{message.TextValue}\")");
+            Log.Error($"Something went wrong while trying to Log a message: (type={channelInfo.Name}, sender={sender.TextValue}, message=\"{message.TextValue}\")");
             return;
         }
         
