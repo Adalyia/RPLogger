@@ -114,7 +114,7 @@ public sealed class RPLogger : IDalamudPlugin
         };
 
         // Add Logout event handler
-        this.ClientState.Logout += () =>
+        this.ClientState.Logout += (int type, int code) =>
         {
             // Reset LastTell on logout
             LastTell = null;
@@ -159,7 +159,7 @@ public sealed class RPLogger : IDalamudPlugin
     private void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled)
     {
         // this.. shouldn't be possible? I'm assuming this event can't even fire unless you're logged in but just in case lol.
-        if (ClientState.LocalPlayer == null || ClientState.LocalPlayer.Name == null || ClientState.LocalPlayer.HomeWorld.GameData == null || ClientState.LocalPlayer.HomeWorld.GameData.Name == null) return;
+        if (ClientState.LocalPlayer == null || ClientState.LocalPlayer.Name == null || !ClientState.LocalPlayer.HomeWorld.IsValid || ClientState.LocalPlayer.HomeWorld.Value.Name.ToString() == null) return;
 
         // Check if it's a supported chat channel and if logging is enabled for it
         if (!IsLoggingEnabled(type, message) || !LoggedChannels.TryGetValue(type, out var channelInfo)) return;
@@ -196,10 +196,10 @@ public sealed class RPLogger : IDalamudPlugin
 
         // Fix character names for log names & entries
         var playerName = ClientState.LocalPlayer.Name;
-        var playerWorldName = ClientState.LocalPlayer.HomeWorld.GameData.Name;
+        var playerWorldName = ClientState.LocalPlayer.HomeWorld.Value.Name.ToString();
         var playerFullName = $"{playerName}@{playerWorldName}";
         
-        var senderWorldName = sender.Payloads.OfType<PlayerPayload>().FirstOrDefault()?.World.Name.RawString ?? playerWorldName;
+        var senderWorldName = sender.Payloads.OfType<PlayerPayload>().FirstOrDefault()?.World.Value.Name.ToString() ?? playerWorldName;
         var senderName = CorrectCharacterName(sender.TextValue.Replace(senderWorldName, "").Trim());
         var senderFullName = $"{senderName}@{senderWorldName}";
 
