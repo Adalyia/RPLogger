@@ -66,6 +66,7 @@ public sealed class RPLogger : IDalamudPlugin
     private IDalamudPluginInterface PluginInterface { get; init; }
     private ICommandManager CommandManager { get; init; }
     private IClientState ClientState { get; init; }
+    private IPlayerState PlayerState { get; init; }
     private IChatGui ChatGui { get; init; }
     public IPluginLog Log { get; init; }
 
@@ -85,7 +86,7 @@ public sealed class RPLogger : IDalamudPlugin
     /// <param name="ClientState">Contains game state information.</param>
     /// <param name="ChatGui">Handles all chat messages.</param>
     /// <param name="Log">Logger for the plugin.</param>
-    public RPLogger(IDalamudPluginInterface PluginInterface, ICommandManager CommandManager, IClientState ClientState, IChatGui ChatGui, IPluginLog Log)
+    public RPLogger(IDalamudPluginInterface PluginInterface, ICommandManager CommandManager, IClientState ClientState, IPlayerState PlayerState, IChatGui ChatGui, IPluginLog Log)
     {
         // Services
         this.PluginInterface = PluginInterface;
@@ -93,6 +94,7 @@ public sealed class RPLogger : IDalamudPlugin
         this.ChatGui = ChatGui;
         this.Log = Log;
         this.ClientState = ClientState;
+        this.PlayerState = PlayerState;
 
         // Plugin Config Stuff
         Config = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
@@ -159,7 +161,7 @@ public sealed class RPLogger : IDalamudPlugin
     private void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled)
     {
         // this.. shouldn't be possible? I'm assuming this event can't even fire unless you're logged in but just in case lol.
-        if (ClientState.LocalPlayer == null || ClientState.LocalPlayer.Name == null || !ClientState.LocalPlayer.HomeWorld.IsValid || ClientState.LocalPlayer.HomeWorld.Value.Name.ToString() == null) return;
+        if (PlayerState == null || PlayerState.CharacterName == null || !PlayerState.HomeWorld.IsValid || PlayerState.HomeWorld.Value.Name.ToString() == null) return;
 
         // Check if it's a supported chat channel and if logging is enabled for it
         if (!IsLoggingEnabled(type, message) || !LoggedChannels.TryGetValue(type, out var channelInfo)) return;
@@ -195,8 +197,8 @@ public sealed class RPLogger : IDalamudPlugin
         var timePrefix = (Config.Datestamp || Config.Timestamp) ? channelInfo.TimePrefixFormat.Replace("{time}", GetTimePrefix(currentTime)) : "";
 
         // Fix character names for log names & entries
-        var playerName = ClientState.LocalPlayer.Name;
-        var playerWorldName = ClientState.LocalPlayer.HomeWorld.Value.Name.ToString();
+        var playerName = PlayerState.CharacterName;
+        var playerWorldName = PlayerState.HomeWorld.Value.Name.ToString();
         var playerFullName = $"{playerName}@{playerWorldName}";
         
         var senderWorldName = sender.Payloads.OfType<PlayerPayload>().FirstOrDefault()?.World.Value.Name.ToString() ?? playerWorldName;

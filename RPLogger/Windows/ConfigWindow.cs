@@ -3,7 +3,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Numerics;
 using Dalamud.Interface.Windowing;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System.IO.Compression;
 using System.Linq;
 
